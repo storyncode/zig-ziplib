@@ -1,5 +1,6 @@
 const std = @import("std");
 const File = std.fs.File;
+const headers = @import("headers");
 
 pub const Zipfile = struct {
     input_file: File,
@@ -17,5 +18,5 @@ pub const Zipfile = struct {
 };
 
 test {
-    std.testing.refAllDecls(@This());
+    _ = @import("headers/header.zig"); // indicates that tests from headers/headers.zig should be run
 }

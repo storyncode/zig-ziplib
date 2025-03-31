@@ -1,5 +1,10 @@
 const std = @import("std");
+const testing = std.testing;
 const assert = std.debug.assert;
+
+pub const HeaderError = error{
+    InvalidSystemNameReference,
+};
 
 pub const Signature = u32;
 pub const SystemName = enum(u8) {
@@ -24,8 +29,8 @@ pub const SystemName = enum(u8) {
     OS400 = 18,
     OSX = 19,
 
-    pub fn fromByte(self: *SystemName, value: u8) void {
-        self.* = switch (value) {
+    pub fn fromByte(value: u8) HeaderError!SystemName {
+        return switch (value) {
             0 => SystemName.MSDOS,
             1 => SystemName.Amiga,
             2 => SystemName.OpenVMS,
@@ -46,10 +51,25 @@ pub const SystemName = enum(u8) {
             17 => SystemName.Tandem,
             18 => SystemName.OS400,
             19 => SystemName.OSX,
-            else => unreachable,
+            else => HeaderError.InvalidSystemNameReference,
         };
     }
 };
+
+test "SystemName parses as expected" {
+    var systemName: SystemName = undefined;
+
+    for (0..20) |value| {
+        const u8Value: u8 = @intCast(value);
+        systemName = try SystemName.fromByte(u8Value);
+
+        try testing.expect(@intFromEnum(systemName) == value);
+    }
+}
+
+test "SystemName returns error union if invalid value passed" {
+    try testing.expectError(HeaderError.InvalidSystemNameReference, SystemName.fromByte(20));
+}
 
 pub const LocalFileHeader = struct {
     signature: Signature,
@@ -61,14 +81,3 @@ pub const CentralDirectoryFileHeader = struct {
     signature: Signature,
     version: SystemName,
 };
-
-test "Header parses as expected" {
-    var version: SystemName = undefined;
-
-    for (0..20) |value| {
-        const u8Value: u8 = @intCast(value);
-        version.fromByte(u8Value);
-
-        assert(@intFromEnum(version) == value);
-    }
-}
